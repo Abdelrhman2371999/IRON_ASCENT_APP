@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#090d12">
+<title>IRON ASCENT — Fitness</title>
+<style>
+:root{--bg:#090d12;--card:#121821;--card2:#19222d;--text:#f5f7fa;--muted:#9eabb9;--accent:#ff7a18;--green:#39d98a;--line:#293544;--danger:#ff5c5c;--safe-top:env(safe-area-inset-top,0px);--safe-bottom:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,"SF Arabic",Tahoma,Arial,sans-serif;line-height:1.55;overscroll-behavior-y:none}
+
+/* ===== App shell ===== */
+.app{max-width:520px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;position:relative}
+
+/* Top app bar */
+.appbar{position:sticky;top:0;z-index:20;background:rgba(9,13,18,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);padding:calc(10px + var(--safe-top)) 16px 10px}
+.appbar-row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.appbar-title{font-size:17px;font-weight:800}
+.appbar-title small{display:block;font-size:11px;color:var(--muted);font-weight:400;margin-top:2px}
+.clock{text-align:left;background:var(--card2);border:1px solid var(--line);border-radius:14px;padding:8px 12px;min-width:118px}
+.clock .time{font-size:19px;font-weight:800;color:var(--accent);letter-spacing:.5px;direction:ltr}
+.clock .date{font-size:11px;color:var(--muted);margin-top:1px}
+
+/* Hero stats */
+.herowrap{padding:14px 16px 0}
+.hero{background:linear-gradient(135deg,#1b2633,#10151c);border:1px solid var(--line);border-radius:20px;padding:16px}
+.hero .sub{color:var(--muted);font-size:12.5px}.offline-badge{display:inline-block;margin-right:6px;padding:3px 7px;border-radius:999px;background:#253141;color:#39d98a;font-size:10px;font-weight:800;letter-spacing:.5px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:13px;padding:10px 6px;text-align:center}
+.stat b{font-size:16px;display:block}.stat span{font-size:10.5px;color:var(--muted)}
+
+/* Content area — scrolls, leaves room for bottom nav */
+.content{flex:1;padding:14px 16px calc(90px + var(--safe-bottom))}
+
+.screen{display:none}
+.screen.active{display:block}
+
+/* Day chip selector (horizontal scroll, app-like segmented feel) */
+.daytabs{display:flex;gap:8px;overflow-x:auto;padding:2px 0 14px;scrollbar-width:none}
+.daytabs::-webkit-scrollbar{display:none}
+.daychip{flex:0 0 auto;background:var(--card);color:var(--text);border:1px solid var(--line);padding:9px 14px;border-radius:12px;cursor:pointer;font-size:13px;white-space:nowrap}
+.daychip.active{background:var(--accent);color:#111;border-color:var(--accent);font-weight:bold}
+
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:15px;margin-bottom:14px}
+.exercise{background:var(--card2);border:1px solid var(--line);border-radius:14px;padding:12px;margin:10px 0}
+.ex-top{display:flex;gap:10px;align-items:center}
+.check{accent-color:var(--green);transform:scale(1.25);width:20px;height:20px}
+.sets{margin-right:auto;color:var(--accent);font-weight:bold;white-space:nowrap;font-size:13px}
+.split-media{width:100%;height:190px;object-fit:cover;border-radius:14px;margin:4px 0 14px;background:#0d1218;border:1px solid var(--line)}
+.ex-img{width:100%;height:170px;object-fit:cover;border-radius:11px;margin-top:10px;background:#0d1218}
+.ex-img-fallback{width:100%;height:170px;border-radius:11px;margin-top:10px;background:linear-gradient(135deg,#1b2633,#10151c);border:1px dashed var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;padding:10px;color:var(--muted);font-size:13px}
+.ex-img-fallback a{display:inline-flex;align-items:center;gap:6px;background:var(--accent);color:#111;font-weight:bold;text-decoration:none;padding:8px 14px;border-radius:10px;font-size:13px}
+.note{color:var(--muted);font-size:12px}
+.meal-row{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center}
+.reminder{display:flex;align-items:center;gap:7px;background:#253141;border:1px solid var(--line);padding:7px 9px;border-radius:10px;white-space:nowrap;font-size:11px}
+.reminder input{width:18px;height:18px;margin:0}
+.reminder-time{width:105px!important;padding:7px!important;font-size:14px!important}
+.reminder-status{font-size:11px;color:var(--green);margin-top:8px}
+.meal{background:var(--card2);border:1px solid var(--line);border-radius:13px;padding:12px;margin:8px 0}
+.time-tag{color:var(--accent);font-weight:bold}
+.meal b{color:#fff}
+.section-title{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.section-title h2{font-size:16px}
+.pill{font-size:11px;background:#253141;padding:5px 9px;border-radius:20px;color:#c5d0dc;white-space:nowrap}
+
+input,textarea,select{background:var(--card2);border:1px solid var(--line);color:#fff;border-radius:10px;padding:12px;font:inherit;width:100%;font-size:16px}
+.btn{background:var(--green);color:#08120d;border:0;border-radius:10px;padding:12px 16px;font-weight:bold;cursor:pointer;font-size:14px}
+.btn.secondary{background:#2a3543;color:#fff}
+.btn.danger{background:var(--danger);color:#fff}
+.form-grid{display:grid;grid-template-columns:1fr;gap:10px}
+.actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+
+.table-wrap{overflow:auto}
+table{width:100%;border-collapse:collapse}
+th,td{padding:10px 8px;border-bottom:1px solid var(--line);text-align:center;white-space:nowrap;font-size:13px}
+th{color:var(--muted);font-weight:600}
+.progress{height:12px;background:#222d39;border-radius:20px;overflow:hidden;margin:10px 0}
+.bar{height:100%;background:var(--green);width:0;transition:width .4s}
+.rest{padding:25px;text-align:center;background:var(--card2);border-radius:14px}
+.rest strong{font-size:22px}
+
+/* ===== day progress ring ===== */
+.day-progress{display:flex;align-items:center;gap:10px;margin:2px 0 12px}
+.day-progress .bartrack{flex:1;height:10px;background:#222d39;border-radius:20px;overflow:hidden}
+.day-progress .barfill{height:100%;background:linear-gradient(90deg,var(--accent),var(--green));width:0;transition:width .35s ease}
+.day-progress .barlbl{font-size:12px;color:var(--muted);white-space:nowrap;min-width:52px;text-align:left;direction:ltr}
+.day-progress.done .barlbl{color:var(--green);font-weight:800}
+
+/* ===== rest timer ===== */
+.timerbtn{background:#253141;border:1px solid var(--line);color:var(--accent);border-radius:9px;padding:6px 10px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:inherit}
+.timerbtn.running{color:var(--green);border-color:var(--green)}
+.timerbtn.done{color:#111;background:var(--green);border-color:var(--green)}
+
+/* ===== lightbox ===== */
+.lightbox{position:fixed;inset:0;background:rgba(4,6,9,.94);z-index:60;display:none;align-items:center;justify-content:center;padding:24px;flex-direction:column;gap:12px}
+.lightbox.open{display:flex}
+.lightbox img{max-width:100%;max-height:70vh;border-radius:14px;border:1px solid var(--line);object-fit:contain;background:#0d1218}
+.lightbox .lb-title{text-align:center;font-weight:800}
+.lightbox .lb-close{position:absolute;top:calc(16px + var(--safe-top));left:16px;background:var(--card2);border:1px solid var(--line);color:#fff;border-radius:999px;width:38px;height:38px;font-size:18px;cursor:pointer}
+.ex-img{cursor:zoom-in}
+
+/* ===== confetti ===== */
+.confetti-piece{position:fixed;top:-20px;z-index:70;border-radius:2px;pointer-events:none;animation:confetti-fall linear forwards}
+@keyframes confetti-fall{to{transform:translateY(110vh) rotate(540deg);opacity:.3}}
+.toast{position:fixed;left:50%;top:calc(14px + var(--safe-top));transform:translateX(-50%) translateY(-140%);background:var(--green);color:#08120d;font-weight:800;padding:10px 18px;border-radius:999px;z-index:80;font-size:13px;box-shadow:0 8px 24px rgba(0,0,0,.35);transition:transform .35s ease;white-space:nowrap}
+.toast.show{transform:translateX(-50%) translateY(0)}
+
+/* Bottom navigation bar — app-style */
+.bottomnav{position:fixed;bottom:0;left:0;right:0;z-index:30}
+.bottomnav-inner{max-width:520px;margin:0 auto;background:rgba(18,24,33,.96);backdrop-filter:blur(10px);border-top:1px solid var(--line);display:flex;padding:8px 10px calc(8px + var(--safe-bottom))}
+.navbtn{flex:1;background:none;border:0;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 4px;border-radius:12px;cursor:pointer;font-family:inherit}
+.navbtn .icon{font-size:20px;line-height:1}
+.navbtn .lbl{font-size:11px;font-weight:600}
+.navbtn.active{color:var(--accent)}
+.navbtn.active .icon{transform:translateY(-1px)}
+
+footer{text-align:center;color:var(--muted);font-size:11px;padding:6px 4px 10px}
+
+/* ===== v2 profile / badges / AI / about ===== */
+.profile-card{background:linear-gradient(135deg,#1b2633,#10151c);border:1px solid var(--line);border-radius:20px;padding:18px;margin-bottom:14px}
+.profile-title{font-size:22px;font-weight:900}.profile-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.profile-grid .full{grid-column:1/-1}
+.badge-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.badge{background:var(--card2);border:1px solid var(--line);border-radius:14px;padding:12px;text-align:center}.badge.locked{opacity:.35;filter:grayscale(1)}.badge .medal{font-size:28px;display:block}.badge b{display:block;margin-top:5px}.badge small{color:var(--muted);font-size:10px}
+.exercise-name-en{display:block}.exercise-name-ar{display:block;color:var(--muted);font-size:12px;margin-top:2px}.ai-answer{white-space:pre-wrap;background:var(--card2);border:1px solid var(--line);border-radius:14px;padding:14px;margin-top:12px;min-height:90px}.dev{text-align:center;color:var(--muted);font-size:12px;padding:18px 4px}.linkbtn{display:inline-block;background:var(--accent);color:#111;text-decoration:none;border-radius:10px;padding:10px 14px;font-weight:800}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="appbar">
+    <div class="appbar-row">
+      <div class="appbar-title">🔥 IRON ASCENT<small id="welcomeLine">Welcome 👋</small></div>
+      <div class="clock">
+        <div class="time" id="clockTime">--:--</div>
+        <div class="date" id="clockDate">--</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="herowrap">
+    <div class="hero">
+      <div class="sub"><span id="profileSummary">جهّز ملفك الشخصي للبدء</span> <span class="offline-badge">OFFLINE</span></div>
+      <div class="stats">
+        <div class="stat"><b id="startWeightStat">--</b><span>البداية</span></div>
+        <div class="stat"><b id="currentWeightStat">--</b><span>الحالي</span></div>
+        <div class="stat"><b id="badgeStat">🏆 0</b><span>البادجات</span></div>
+        <div class="stat"><b id="streakStat">🔥 0</b><span>أيام متتالية</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- ===== screen: profile ===== -->
+    <div class="screen" id="screen-profile">
+      <section class="profile-card">
+        <div class="profile-title">👋 أهلاً بك في IRON ASCENT</div>
+        <p class="note">سجل بياناتك مرة واحدة. تُحفظ على جهازك ويمكنك تعديلها لاحقًا.</p>
+        <div class="profile-grid">
+          <div class="full"><div class="note">الاسم / Name</div><input id="pname" placeholder="مثال: Abdelrhman"></div>
+          <div><div class="note">النوع / Gender</div>
+            <select id="pgender" onchange="onGenderChange()">
+              <option value="" disabled selected>اختر...</option>
+              <option value="male">ذكر 👨</option>
+              <option value="female">أنثى 👩</option>
+            </select>
+          </div>
+          <div class="full" id="trainingSystemRow" style="display:none">
+            <div class="note">نظام التمرين / Training Split</div>
+            <select id="ptrainingSystem">
+              <option value="iron">🔴 Iron Split — برنامج 5 أيام (الافتراضي)</option>
+              <option value="ppl">🟢 Push / Pull / Legs</option>
+              <option value="arnold">🟣 Arnold Split</option>
+            </select>
+          </div>
+          <div><div class="note">الهدف / Goal</div>
+            <select id="pgoal">
+              <option value="" disabled selected>اختر...</option>
+              <option value="lose">خسارة وزن / حرق دهون</option>
+              <option value="gain">زيادة وزن / بناء عضل</option>
+              <option value="tone">تناسق عام (Recomposition)</option>
+            </select>
+          </div>
+          <div><div class="note">العمر / Age</div><input id="page" type="number" min="10" max="100" placeholder="25"></div>
+          <div><div class="note">الطول / Height (cm)</div><input id="pheight" type="number" min="100" max="250" placeholder="175"></div>
+          <div class="full"><div class="note">الوزن الحالي / Weight (kg)</div><input id="pweight" type="number" step="0.1" min="20" max="300" placeholder="70"></div>
+        </div>
+        <div class="actions"><button class="btn" onclick="saveProfile(true)">حفظ البيانات</button></div>
+      </section>
+      <section class="card" id="planCard">
+        <div class="section-title"><h2>🎯 خطتك المقترحة</h2><span class="pill" id="planSplitPill">--</span></div>
+        <p class="note" id="planIntro">هتظهر هنا خطتك في التمرين والأكل والمياه بمجرد ما تحفظ بياناتك.</p>
+        <div class="stats" id="planStats" style="grid-template-columns:repeat(3,1fr)"></div>
+      </section>
+      <section class="card">
+        <div class="section-title"><h2>🏆 Badges</h2><span class="pill" id="badgeCount">0 Badges</span></div>
+        <p class="note" id="badgeExplain">كل زيادة 4 كجم فوق وزن البداية تمنحك Badge جديد. يتم احتساب أعلى وزن وصلت إليه.</p>
+        <div class="badge-grid" id="badgeGrid"></div>
+      </section>
+      <footer class="dev">Developed by <b>Abdelrhman Hamed</b></footer>
+    </div>
+
+    <!-- ===== screen: workout ===== -->
+    <div class="screen active" id="screen-workout">
+      <div class="daytabs" id="tabs"></div>
+      <div id="day"></div>
+      <section class="card">
+        <div class="section-title"><h2>🕒 سجل جلسات التمرين</h2><span class="pill" id="workoutLogCount">0 جلسة</span></div>
+        <p class="note">اضغط "ابدأ التمرين" فوق تمارين اليوم، وهيتسجل تلقائيًا وقت الجلسة هنا لما تخلص أو توقفها.</p>
+        <div id="workoutLogList"></div>
+        <div class="actions"><button class="btn secondary" onclick="clearWorkoutLog()">مسح السجل</button></div>
+      </section>
+    </div>
+
+    <!-- ===== screen: nutrition ===== -->
+    <div class="screen" id="screen-nutrition">
+      <section class="card">
+        <div class="section-title"><h2>🍽️ نظام الأكل</h2><span class="pill">مبني على بياناتك</span></div>
+        <p class="note" id="nutritionTargets">جهّز ملفك الشخصي الأول عشان نحسبلك السعرات والبروتين والمياه المناسبين.</p>
+      </section>
+      <section class="card">
+        <div class="section-title"><h2>🔔 تذكيرات الوجبات</h2><span class="pill">تذكيرات يومية</span></div>
+        <p class="note">فعّل التذكير لأي وجبة، واختار الوقت المناسب لك. على Android ستصلك إشعارات حتى لو التطبيق مقفول.</p>
+        <div class="actions">
+          <button class="btn" onclick="enableAllMealReminders()">🔔 تفعيل كل التذكيرات</button>
+          <button class="btn secondary" onclick="disableAllMealReminders()">إيقاف الكل</button>
+        </div>
+        <div id="mealReminderStatus" class="reminder-status"></div>
+      </section>
+      <section class="card" id="mealList"></section>
+    </div>
+
+    <!-- ===== screen: ai ===== -->
+    <div class="screen" id="screen-ai">
+      <section class="card">
+        <div class="section-title"><h2>🤖 IRON AI</h2><span class="pill">Offline Assistant</span></div>
+        <p class="note">مساعد ذكي مبني على بياناتك (السن، الوزن، الطول، الهدف، النوع، وبرنامجك الحالي) — بيشتغل بالكامل من غير إنترنت.</p>
+        <div class="daytabs" id="aiChips"></div>
+        <textarea id="aiQuestion" rows="4" placeholder="مثال: ما أفضل طريقة لتطوير تمرين الصدر؟"></textarea>
+        <div class="actions"><button class="btn" onclick="askAI()">اسأل AI 🤖</button><button class="btn secondary" onclick="document.getElementById('aiQuestion').value=''">مسح</button></div>
+        <div id="aiAnswer" class="ai-answer">اكتب سؤالك أو اختار سؤال جاهز واضغط اسأل AI.</div>
+      </section>
+      <section class="card">
+        <h3>مهم</h3>
+        <p class="note">IRON AI هنا مساعد داخلي (Rule-based) بيحلل بياناتك ويرد فورًا من غير نت، مش بديل لدكتور أو مدرب مختص في الحالات الطبية.</p>
+      </section>
+      <footer class="dev">Developed by <b>Abdelrhman Hamed</b></footer>
+    </div>
+
+    <!-- ===== screen: weight ===== -->
+    <div class="screen" id="screen-weight">
+      <section class="card">
+        <div class="section-title"><h2>⚖️ سجل وزنك</h2><span class="pill">اوزن نفسك مرة أسبوعيًا صباحًا</span></div>
+        <div class="form-grid">
+          <div><div class="note">التاريخ</div><input id="wdate" type="date"></div>
+          <div><div class="note">وصلت لكام كيلو؟</div><input id="wvalue" type="number" step="0.1" min="0" placeholder="مثال: 66.4"></div>
+          <div><div class="note">ملاحظة اختيارية</div><input id="wnote" placeholder="مثال: بعد أسبوع 3"></div>
+        </div>
+        <div class="actions"><button class="btn" onclick="addWeight()">حفظ الوزن</button><button class="btn secondary" onclick="clearWeights()">مسح السجل</button></div>
+        <div id="progressText" class="note" style="margin-top:12px"></div>
+        <div class="progress"><div class="bar" id="bar"></div></div>
+        <div class="table-wrap"><table><thead><tr><th>التاريخ</th><th>الوزن</th><th>الفرق عن البداية</th><th>ملاحظة</th><th></th></tr></thead><tbody id="weights"></tbody></table></div>
+      </section>
+      <footer>Creatine Monohydrate: 5 جم يوميًا • ISO100: سكوب حسب احتياج البروتين • بروتين مستهدف تقريبًا 130–150 جم/اليوم • نوم 7–8 ساعات</footer>
+    </div>
+
+  </div>
+
+  <div class="lightbox" id="lightbox" onclick="if(event.target===this)closeLightbox()">
+    <button class="lb-close" onclick="closeLightbox()">✕</button>
+    <img id="lightboxImg" src="" alt="">
+    <div class="lb-title" id="lightboxTitle"></div>
+  </div>
+  <div class="toast" id="toast"></div>
+
+  <div class="bottomnav">
+    <div class="bottomnav-inner">
+      <button class="navbtn active" data-screen="workout" onclick="showScreen('workout')"><span class="icon">🏋️</span><span class="lbl">البرنامج</span></button>
+      <button class="navbtn" data-screen="nutrition" onclick="showScreen('nutrition')"><span class="icon">🍽️</span><span class="lbl">الأكل</span></button>
+      <button class="navbtn" data-screen="weight" onclick="showScreen('weight')"><span class="icon">⚖️</span><span class="lbl">الوزن</span></button>
+      <button class="navbtn" data-screen="ai" onclick="showScreen('ai')"><span class="icon">🤖</span><span class="lbl">AI</span></button>
+      <button class="navbtn" data-screen="profile" onclick="showScreen('profile')"><span class="icon">👤</span><span class="lbl">حسابي</span></button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const IMG={};
+
+// نظام صور مرن بالنوع: بيحاول أول صورة حقيقية لو الديفلوبر ضاف واحدة في photos/<gender>/<key>.jpg
+// ولو مش موجودة بيرجع تلقائيًا لرسمة توضيحية Offline في images/<gender>/<key>.svg
+function genderKey(){ const p=getProfile(); return (p && p.gender==="male") ? "male" : "female"; }
+const TRAINING_SYSTEMS={
+ iron:{label:"Iron Split",labelAr:"برنامج 5 أيام (Iron Split)"},
+ ppl:{label:"Push / Pull / Legs",labelAr:"Push / Pull / Legs"},
+ arnold:{label:"Arnold Split",labelAr:"Arnold Split"}
+};
+function trainingSystemKey(){ const p=getProfile(); const v=p&&p.trainingSystem; return TRAINING_SYSTEMS[v]?v:"iron"; }
+function trainingSystemLabel(key){ return (TRAINING_SYSTEMS[key]||TRAINING_SYSTEMS.iron).labelAr; }
+// نظام صور مرن: عند الرجال بيبقى فيه مجلد صور حقيقية منفصل لكل نظام تمرين (photos/male/<system>/<slug>.jpg)
+// لو مفيش صورة حقيقية (أو عند البنات لسه) بيرجع تلقائيًا لرسمة توضيحية Offline في images/<gender>/<key>.svg
+function photoFor(x){
+  const g=genderKey();
+  if(g==="male" && x[4]){ return `photos/male/${trainingSystemKey()}/${x[4]}.jpg`; }
+  return `photos/${g}/${x[3]}.jpg`;
+}
+function illustrationFor(key){ return `images/${genderKey()}/${key}.svg`; }
+function imageFor(key){ return illustrationFor(key); } // مستخدمة كافتراضي أول تحميل
+
+const daysMaleIron=[
+{n:"السبت",media:"sat",title:"🏋️ Day 1 — Back + Traps + Forearms + Abs",ex:[
+["Cable Y Raises","رفعات كيبل Y","3 × 8–12","shoulder","cable-y-raises"],["Wide Grip Lat Pulldown","سحب لات قبضة واسعة","3 × 8–12","pulldown","wide-grip-lat-pulldown"],["Kelso Shrugs","شرَغز كيلسو","2 × 6–10","shoulder","kelso-shrugs"],["T-Bar Machine Row","سحب T-Bar على الجهاز","1 × 6–10","row","t-bar-machine-row"],["Single-Arm Cable Lat Row","سحب لات كيبل بذراع واحدة","2 × 8–12","row","single-arm-cable-lat-row"],["Vertical Shrugs","شرَغز عمودي","2 × 6–12","shoulder","vertical-shrugs"],["Cable Reverse Curl","بايسبس عكسي بالكيبل","3 × 8–12","biceps","cable-reverse-curl"],["Cable Abs Crunches","كرنش بطن بالكيبل","2 × 8–12","abs","cable-ads-crunches"]]},
+{n:"الأحد",media:"sun",title:"🏋️ Day 2 — Chest + Biceps + Triceps",ex:[
+["Low Incline DB Press","ضغط دمبل مائل منخفض","2 × 5–10","bench","low-incline-db-press"],["High Incline Smith Press","ضغط سميث مائل عالي","2 × 6–12","bench","high-incline-smith-press"],["Flat Chest Press Machine","ضغط صدر مستوي على الجهاز","1 × 6–10","chestfly","flat-chest-press-machine"],["Bayesian Curl","بايزيان كيرل","2 × 8–12","biceps","bayesian-curl"],["Rope Triceps Pushdown","ترايسبس دفع بالحبل","2 × 8–12","triceps","rope-triceps-pushdown"],["DB Incline Curl","بايسبس دمبل مائل","2 × 6–10","biceps","db-incline-curl"],["Rope Overhead Extension","تمديد ترايسبس فوق الرأس بالحبل","1 × 8–12","triceps","rope-overhead-extension"],["Decline Fly Machine","فلاي صدر منخفض على الجهاز","2 × 6–10","chestfly","decline-fly-machine"]]},
+{n:"الاثنين",media:"mon",title:"🏋️ Day 3 — Legs + Shoulders + Abs",ex:[
+["Kelso Shrugs","شرَغز كيلسو","1 × 6–10","shoulder","kelso-shrugs"],["Cable Leg Curl","ليج كيرل بالكيبل","2 × 8–12","legcurl","cable-leg-curl"],["Seated Leg Curl","ليج كيرل جالس","3 × 6–10","legcurl","seated-leg-curl"],["Leg Press Machine","ليج برس على الجهاز","2 × 6–10","legpress","leg-press-machine"],["Adductors Machine","ضم الفخذين على الجهاز","3 × 8–12","adductor","adductors-machine"],["Smith Standing Calf Raises","سمث كالف واقف","3 × 10–12","calf","smith-standing-calf-raises"],["Lateral Raises Machine","رفرفة جانبي على الجهاز","2 × 6–10","shoulder","lateral-raises-machine"],["Cable Abs Crunches","كرنش بطن بالكيبل","2 × 8–12","abs","cable-ads-crunches"]]},
+{n:"الثلاثاء",media:null,title:"😴 Rest Day — Active Recovery",ex:[]},
+{n:"الأربعاء",media:"wed",title:"🏋️ Day 4 — Upper Body",ex:[
+["T-Bar Machine","سحب T-Bar","2 × 6–10","row","t-bar-machine"],["Chest Fly Machine","فلاي صدر على الجهاز","3 × 8–12","chestfly","chest-fly-machine"],["Wide Grip Lat Pulldown","سحب لات قبضة واسعة","1 × 8–12","pulldown","wide-grip-lat-pulldown"],["Smith High Incline Press","ضغط سميث مائل عالي","1 × 6–10","bench","smith-high-incline-press"],["Close Grip Seated Row","سحب جالس قبضة ضيقة","2 × 8–12","row","close-grip-seated-row"],["Lateral Raise Machine","رفرفة جانبي على الجهاز","3 × 6–10","shoulder","lateral-raise-machine"],["DB Preacher Curl","بايسبس بريتشر دمبل","2 × 8–12","biceps","db-preacher-curl"],["Rope Triceps Pushdown","ترايسبس دفع بالحبل","2 × 8–12","triceps","rope-triceps-pushdown"]]},
+{n:"الخميس",media:"thu",title:"🏋️ Day 5 — Legs",ex:[
+["Seated Leg Curl","ليج كيرل جالس","3 × 8–12","legcurl","seated-leg-curl"],["Hack Squat Machine","هاك سكوات على الجهاز","2 × 6–10","hack","hack-squat-machine"],["Leg Extension Machine","ليج إكستنشن","3 × 8–12","legextension","leg-extension-machine"],["Adductors Machine","ضم الفخذين على الجهاز","2 × 8–12","adductor","adductors-machine"],["Smith Hip Thrust","هيب ثرست سميث","2 × 6–10","hipthrust","smith-hip-thrust"],["DB Wrist Flexion","ثني الرسغ بالدمبل","2 × 10–12","wrist","db-wrist-flexion"],["Smith Standing Calf Raises","سمث كالف واقف","3 × 8–12","calf","smith-standing-calf-raises"]]},
+{n:"الجمعة",media:null,title:"😴 Rest Day — Active Recovery",ex:[]}
+];
+
+const daysMalePPL=[
+{n:"السبت",media:"sat",title:"🟠 Day 1 — Push (صدر + كتف + ترايسبس)",ex:[
+["Barbell Bench Press","بنش بالبار","3 × 6–10","bench","barbell-bench-press"],["Incline Dumbbell Press","بنش مائل دمبل","3 × 8–12","bench","incline-dumbbell-press"],["Chest Dips","دبس صدر","2 × 8–12","chestfly","chest-dips"],["Dumbbell Shoulder Press","ضغط كتف بالدمبل","3 × 8–12","shoulderpress","dumbbell-shoulder-press"],["Lateral Raises","رفرفة جانبية","3 × 12–15","shoulder","lateral-raises"],["Overhead Triceps Extension","تمديد ترايسبس فوق الرأس","2 × 10–12","triceps","overhead-triceps-extension"],["Triceps Pushdowns (Cable)","ترايسبس دفع بالكيبل","2 × 10–15","triceps","triceps-pushdowns"],["Face Pulls","فيس بولز","2 × 12–15","shoulder","face-pulls"]]},
+{n:"الأحد",media:"sun",title:"🔵 Day 2 — Pull (ظهر + بايسبس)",ex:[
+["Barbell Rows","سحب بالبار","3 × 6–10","row","barbell-rows"],["Lat Pulldowns","سحب لات","3 × 8–12","pulldown","lat-pulldowns"],["Seated Cable Rows","سحب أرضي بالكيبل","3 × 8–12","row","seated-cable-rows"],["Pull-Ups (Weighted)","عقلة (بوزن إضافي)","3 × 6–10","pulldown","pull-ups"],["Rear Delt Flys","فلاي كتف خلفي","2 × 12–15","shoulder","rear-delt-flys"],["Barbell Curls","بايسبس بار","3 × 8–12","biceps","barbell-curls"],["Dumbbell Hammer Curls","هامر كيرل دمبل","2 × 10–12","biceps","dumbbell-hammer-curls"],["Dumbbell Pullovers","بولاوفر دمبل","2 × 10–12","chestfly","dumbbell-pullovers"]]},
+{n:"الاثنين",media:"mon",title:"🟢 Day 3 — Legs",ex:[
+["Barbell Squats","سكوات بار","3 × 6–10","legpress","barbell-squats"],["Leg Extensions","ليج إكستنشن","3 × 10–15","legextension","leg-extensions"],["Lying Leg Curls","ليج كيرل مستلقي","3 × 10–12","legcurl","lying-leg-curls"],["Walking Lunges","لنجز مشي (لكل رجل)","2 × 12","splitsquat","walking-lunges"],["Romanian Deadlifts (RDLs)","ديدليفت روماني","3 × 8–12","rdl","romanian-deadlifts"],["Standing Calf Raises","كالف واقف","3 × 12–15","calf","standing-calf-raises"],["Hanging Leg Raises","رفع رجل معلق للبطن","3 × 10–15","abs","hanging-leg-raises"]]},
+{n:"الثلاثاء",media:null,title:"😴 Rest Day — Active Recovery",ex:[]},
+{n:"الأربعاء",media:"wed",title:"🟠 Day 5 — Upper Body",ex:[
+["Incline Barbell Press","بنش مائل بار","3 × 6–10","bench","incline-barbell-press"],["Close-Grip Bench Press","بنش قبضة ضيقة","3 × 8–12","triceps","close-grip-bench-press"],["Chest-Supported Rows","سحب بسند الصدر","3 × 8–12","row","chest-supported-rows"],["Dumbbell Lateral Raises","رفرفة جانبية دمبل","3 × 12–15","shoulder","dumbbell-lateral-raises"],["EZ-Bar Curls","بايسبس EZ بار","3 × 8–12","biceps","ez-bar-curls"],["Rope Face Pulls","فيس بولز بالحبل","2 × 12–15","shoulder","rope-face-pulls"],["Shrugs (Dumbbell)","شرَغز دمبل","3 × 10–12","shoulder","shrugs"],["Plank","بلانك للبطن","3 × 45–60 ث","abs","plank"]]},
+{n:"الخميس",media:"thu",title:"🔵 Day 6 — Lower Body",ex:[
+["Deadlifts (Conventional)","ديدليفت تقليدي","3 × 5–8","rdl","deadlifts"],["Bulgarian Split Squats","سكوات بلغاري (لكل رجل)","3 × 8–12","splitsquat","bulgarian-split-squats"],["Leg Curls","ليج كيرل","3 × 10–12","legcurl","leg-curls"],["Leg Extensions","ليج إكستنشن","2 × 12–15","legextension","leg-extensions"],["Hip Thrusts","هيب ثرست بار","3 × 8–12","hipthrust","hip-thrusts"],["Dumbbell Lunges","لنجز دمبل (لكل رجل)","2 × 12","splitsquat","dumbbell-lunges"],["Seated Calf Raises","كالف جالس","3 × 12–15","calf","seated-calf-raises"],["Cable Crunches (بطن)","كرنش بطن بالكيبل","3 × 12–15","abs","cable-crunches"]]},
+{n:"الجمعة",media:"sat",title:"🟢 Day 7 — Legs",ex:[
+["Barbell Squats","سكوات بار","3 × 6–10","legpress","barbell-squats"],["Leg Extensions","ليج إكستنشن","3 × 10–15","legextension","leg-extensions"],["Lying Leg Curls","ليج كيرل مستلقي","3 × 10–12","legcurl","lying-leg-curls"],["Walking Lunges","لنجز مشي (لكل رجل)","2 × 12","splitsquat","walking-lunges"],["Romanian Deadlifts (RDLs)","ديدليفت روماني","3 × 8–12","rdl","romanian-deadlifts"],["Standing Calf Raises","كالف واقف","3 × 12–15","calf","standing-calf-raises"],["Hanging Leg Raises","رفع رجل معلق للبطن","3 × 10–15","abs","hanging-leg-raises"]]}
+];
+
+const daysMaleArnold=[
+{n:"السبت",media:"sat",title:"🔴 Day 1 — Chest & Back",ex:[
+["Flat Barbell Bench Press","بنش مسطح بار","3 × 6–10","bench","flat-barbell-bench-press"],["Incline Dumbbell Press","بنش مائل دمبل","3 × 8–12","bench","incline-dumbbell-press"],["Cable Flys","فلاي صدر بالكيبل","2 × 10–15","chestfly","cable-flys"],["Pull-Ups","عقلة","3 × 6–10","pulldown","pull-ups"],["Lat Pulldowns","سحب لات","2 × 8–12","pulldown","lat-pulldowns"],["Chest-Supported Rows","سحب بسند الصدر","3 × 8–12","row","chest-supported-rows"],["Seated Cable Rows","سحب أرضي بالكيبل","2 × 8–12","row","seated-cable-rows"],["Dumbbell Pullovers","بولاوفر دمبل","2 × 10–12","chestfly","dumbbell-pullovers"]]},
+{n:"الأحد",media:"sun",title:"🟣 Day 2 — Arms & Shoulders",ex:[
+["Dumbbell Lateral Raises","رفرفة جانبية دمبل","3 × 12–15","shoulder","dumbbell-lateral-raises"],["Face Pulls","فيس بولز","2 × 12–15","shoulder","face-pulls"],["EZ-Bar Curls","بايسبس EZ بار","3 × 8–12","biceps","ez-bar-curls"],["Preacher Curls","بايسبس بريتشر","2 × 8–12","biceps","preacher-curls"],["Dumbbell Hammer Curls","هامر كيرل دمبل","2 × 10–12","biceps","dumbbell-hammer-curls"],["Dips (Triceps)","دبس ترايسبس","3 × 8–12","triceps","dips"],["Overhead Triceps Extensions","تمديد ترايسبس فوق الرأس","2 × 10–12","triceps","overhead-triceps-extensions"],["Rope Pushdowns","ترايسبس دفع بالحبل","2 × 10–15","triceps","rope-pushdowns"]]},
+{n:"الاثنين",media:"mon",title:"🟢 Day 3 — Legs",ex:[
+["Barbell Squats","سكوات بار","3 × 6–10","legpress","barbell-squats"],["Romanian Deadlifts (RDLs)","ديدليفت روماني","3 × 8–12","rdl","romanian-deadlifts"],["Lying Leg Curls","ليج كيرل مستلقي","3 × 10–12","legcurl","lying-leg-curls"],["Leg Extensions","ليج إكستنشن","3 × 10–15","legextension","leg-extensions"],["Walking Lunges","لنجز مشي (لكل رجل)","2 × 12","splitsquat","walking-lunges"],["Standing Calf Raises","كالف واقف","3 × 12–15","calf","standing-calf-raises"],["Hanging Leg Raises","رفع رجل معلق للبطن","3 × 10–15","abs","hanging-leg-raises"]]},
+{n:"الثلاثاء",media:null,title:"😴 Rest Day — Active Recovery",ex:[]},
+{n:"الأربعاء",media:"wed",title:"🔴 Day 5 — Chest & Back",ex:[
+["Flat Barbell Bench Press","بنش مسطح بار","3 × 6–10","bench","flat-barbell-bench-press"],["Incline Dumbbell Press","بنش مائل دمبل","3 × 8–12","bench","incline-dumbbell-press"],["Cable Flys","فلاي صدر بالكيبل","2 × 10–15","chestfly","cable-flys"],["Pull-Ups","عقلة","3 × 6–10","pulldown","pull-ups"],["Lat Pulldowns","سحب لات","2 × 8–12","pulldown","lat-pulldowns"],["Chest-Supported Rows","سحب بسند الصدر","3 × 8–12","row","chest-supported-rows"],["Seated Cable Rows","سحب أرضي بالكيبل","2 × 8–12","row","seated-cable-rows"],["Dumbbell Pullovers","بولاوفر دمبل","2 × 10–12","chestfly","dumbbell-pullovers"]]},
+{n:"الخميس",media:"thu",title:"🟣 Day 6 — Arms & Shoulders",ex:[
+["Dumbbell Lateral Raises","رفرفة جانبية دمبل","3 × 12–15","shoulder","dumbbell-lateral-raises"],["Face Pulls","فيس بولز","2 × 12–15","shoulder","face-pulls"],["EZ-Bar Curls","بايسبس EZ بار","3 × 8–12","biceps","ez-bar-curls"],["Preacher Curls","بايسبس بريتشر","2 × 8–12","biceps","preacher-curls"],["Dumbbell Hammer Curls","هامر كيرل دمبل","2 × 10–12","biceps","dumbbell-hammer-curls"],["Dips (Triceps)","دبس ترايسبس","3 × 8–12","triceps","dips"],["Overhead Triceps Extensions","تمديد ترايسبس فوق الرأس","2 × 10–12","triceps","overhead-triceps-extensions"],["Rope Pushdowns","ترايسبس دفع بالحبل","2 × 10–15","triceps","rope-pushdowns"]]},
+{n:"الجمعة",media:"sat",title:"🟢 Day 7 — Legs",ex:[
+["Barbell Squats","سكوات بار","3 × 6–10","legpress","barbell-squats"],["Romanian Deadlifts (RDLs)","ديدليفت روماني","3 × 8–12","rdl","romanian-deadlifts"],["Lying Leg Curls","ليج كيرل مستلقي","3 × 10–12","legcurl","lying-leg-curls"],["Leg Extensions","ليج إكستنشن","3 × 10–15","legextension","leg-extensions"],["Walking Lunges","لنجز مشي (لكل رجل)","2 × 12","splitsquat","walking-lunges"],["Standing Calf Raises","كالف واقف","3 × 12–15","calf","standing-calf-raises"],["Hanging Leg Raises","رفع رجل معلق للبطن","3 × 10–15","abs","hanging-leg-raises"]]}
+];
+
+const MALE_SYSTEMS={iron:daysMaleIron,ppl:daysMalePPL,arnold:daysMaleArnold};
+
+const daysFemale=[
+{n:"السبت",media:null,title:"🔴 Lower + Glutes — أرجل وجلوتس (تركيز)",ex:[
+["Hip Thrust","دفع الحوض بالبار","3 × 8–12","hipthrust"],["Bulgarian Split Squat","سكوات بلغاري (لكل رجل)","3 × 8–12","splitsquat"],["Hack Squat","هاك سكوات","3 × 8–12","hack"],["Leg Extension","ليج إكستنشن","2 × 12–15","legextension"],["Hip Abduction","فتح الرجلين (أباداكشن)","3 × 12–20","hipabduction"],["Leg Curl","ثني الرجل (ليج كيرل)","2 × 10–15","legcurl"],["Cable Crunch","كرنش بطن بالكيبل","3 × 10–15","abs"]]},
+{n:"الأحد",media:null,title:"😴 راحة / Recovery",ex:[]},
+{n:"الاثنين",media:null,title:"😴 راحة / Recovery",ex:[]},
+{n:"الثلاثاء",media:null,title:"🟣 Lower Body — أرجل وجلوتس",ex:[
+["Hip Thrust","دفع الحوض بالبار","3 × 8–12","hipthrust"],["Leg Press","ضغط الأرجل","3 × 10–12","legpress"],["Romanian Deadlift","ديدليفت روماني","3 × 8–12","rdl"],["Leg Curl","ثني الرجل","3 × 10–12","legcurl"],["Hip Abduction","فتح الرجلين","3 × 12–15","hipabduction"],["Calf Raise","سمانة","3 × 12–15","calf"]]},
+{n:"الأربعاء",media:null,title:"😴 راحة / Recovery",ex:[]},
+{n:"الخميس",media:null,title:"🟢 Upper Body — ظهر وكتف وذراع",ex:[
+["Lat Pulldown","سحب أمامي","3 × 8–12","pulldown"],["Seated Cable Row","سحب أرضي","3 × 8–12","row"],["Dumbbell Shoulder Press","ضغط كتف بالدمبل","3 × 8–12","shoulderpress"],["Lateral Raise","رفرفة جانبية","3 × 12–15","shoulder"],["Chest Press","ضغط صدر","2 × 10–12","bench"],["Triceps Pushdown","ترايسبس دفع بالكيبل","2 × 10–15","triceps"],["Dumbbell Curl","بايسبس دمبل","2 × 10–15","biceps"]]},
+{n:"الجمعة",media:null,title:"😴 راحة / Recovery",ex:[]}
+];
+
+function getDays(){ return genderKey()==="male" ? MALE_SYSTEMS[trainingSystemKey()] : daysFemale; }
+
+const mealsBase=[
+{id:1,time:"05:45",label:"قبل الجيم",text:"🍌 موزة + 2 تمر + كوب مياه + قهوة اختيارية"},
+{id:2,time:"07:45",label:"بعد التمرين",text:"🥤 سكوب بروتين + 300–400 مل لبن + موزة + 50–70 جم شوفان + 5 جم كرياتين"},
+{id:3,time:"08:15",label:"الفطار",text:"🍳 3 بيضات + 2–3 شرائح/أرغفة عيش + جبنة قريش + خضار + فاكهة"},
+{id:4,time:"10:30",label:"سناك + القهوة الأولى",text:"☕ قهوة + موزة أو حفنة مكسرات أو ساندوتش صغير"},
+{id:5,time:"13:00",label:"الأكل في الشغل",text:"🥪 2 ساندوتش فراخ أو تونة أو بيض بهدف 30–40 جم بروتين + زبادي + فاكهة"},
+{id:6,time:"15:30",label:"سناك + القهوة الثانية",text:"☕ قهوة + 30 جم مكسرات + موزة، أو ساندوتش زبدة فول سوداني وموز"},
+{id:7,time:"18:00",label:"الوجبة الرئيسية",text:"🍗 250–300 جم رز مطبوخ + 200–250 جم فراخ + سلطة + ملعقة زيت زيتون"},
+{id:8,time:"21:00",label:"سناك",text:"🥛 300 مل لبن + 60 جم شوفان + موزة + ملعقة زبدة فول سوداني"},
+{id:9,time:"22:30",label:"قبل النوم",text:"🥣 200 جم زبادي أو جبنة قريش + فاكهة حسب الجوع"}
+];
+function getMeals(){ return mealsBase; }
+const meals=mealsBase; // للتوافق مع الكود القديم اللي بيستخدم meals مباشرة
+
+// مصدر احتياطي تاني لكل تمرين (بيتجرب لو المصدر الأساسي فشل)
+let currentDayIndex=0;
+function renderDay(i){
+ timerHandles={};
+ currentDayIndex=i;
+ const d=getDays()[i];
+ const splitMedia=d.media?`<img class="split-media" src="media/${d.media}.svg" alt="${d.title}" loading="eager">`:"";
+ const progressBar=d.ex.length?`<div class="day-progress" id="dayProgress" data-day="${i}"><div class="bartrack"><div class="barfill"></div></div><span class="barlbl">0/${d.ex.length}</span></div>`:"";
+ const sessionCard=d.ex.length?`
+ <div class="card" style="padding:14px">
+   <div class="section-title"><h2 style="font-size:14px">⏱ وقت التمرين</h2><span class="pill" id="sessionTimerDisplay">00:00</span></div>
+   <div id="sessionOtherDayNote"></div>
+   <div class="actions"><button type="button" class="btn" id="sessionTimerBtn" onclick="toggleWorkoutSession(${i})">▶️ ابدأ التمرين</button></div>
+ </div>`:"";
+ const workout=d.ex.length?d.ex.map((x,j)=>`
+ <div class="exercise">
+   <div class="ex-top"><input class="check" type="checkbox" data-d="${i}" data-e="${j}" onchange="saveCheck(this)">
+   <div><b class="exercise-name-en">${j+1}. ${x[0]}</b><span class="exercise-name-ar">${x[1]}</span></div><span class="sets">${x[2]}</span>
+   <button type="button" class="timerbtn" onclick="toggleRestTimer(this,'${i}-${j}')">⏱ راحة</button></div>
+   <img class="ex-img" src="${photoFor(x)}" alt="${x[0]} / ${x[1]}" loading="lazy" data-key="${x[3]}" data-name="${x[0]}" data-stage="0" onerror="handleImgError(this)" onclick="openLightbox(this.src,'${x[0].replace(/'/g,"\\'")}','${x[1].replace(/'/g,"\\'")}')">
+   <div class="note">نفّذ بتكنيك متحكم فيه. معظم المجموعات قرب الفشل حسب RIR الموجود في البرنامج، بدون التضحية بالفورم.</div>
+ </div>`).join(""):`<div class="rest"><strong>راحة 💤</strong><p>مشي خفيف 20–30 دقيقة أو Stretching اختياري.</p></div>`;
+ document.getElementById("day").innerHTML=`
+ ${sessionCard}
+ <section class="card"><div class="section-title"><h2>${d.title}</h2><span class="pill">6:30 ص</span></div>${splitMedia}${progressBar}${workout}</section>
+ `;
+ document.querySelectorAll(".daychip").forEach((t,j)=>t.classList.toggle("active",j===i));
+ restoreChecks(i);
+ updateDayProgress(i);
+ updateSessionUI();
+ if(d.ex.length) startSessionTick(); else { clearInterval(sessionTickHandle); sessionTickHandle=null; }
+}
+
+function handleImgError(img){
+  const stage=parseInt(img.dataset.stage||"0");
+  if(stage===0){
+    // فشلت الصورة الحقيقية (لو مضافة) -> نرجع للرسمة التوضيحية المدمجة (Offline)
+    img.dataset.stage="1";
+    img.src=illustrationFor(img.dataset.key);
+    return;
+  }
+  const name=img.dataset.name||"Exercise";
+  img.outerHTML=`<div class="ex-img-fallback"><span>🖼️ صورة التمرين غير متاحة: ${name}</span><span class="note">IRON ASCENT يعمل Offline</span></div>`;
+}
+
+/* ===== lightbox (tap a photo to zoom in) ===== */
+function openLightbox(src,nameEn,nameAr){
+  document.getElementById("lightboxImg").src=src;
+  document.getElementById("lightboxImg").alt=nameEn;
+  document.getElementById("lightboxTitle").textContent=`${nameEn} — ${nameAr}`;
+  document.getElementById("lightbox").classList.add("open");
+}
+function closeLightbox(){document.getElementById("lightbox").classList.remove("open")}
+
+/* ===== rest timer (tap the ⏱ button on any exercise) ===== */
+const REST_SECONDS=90;
+let timerHandles={};
+function beep(){
+  try{
+    const ctx=new (window.AudioContext||window.webkitAudioContext)();
+    const o=ctx.createOscillator(),g=ctx.createGain();
+    o.connect(g);g.connect(ctx.destination);o.type="sine";o.frequency.value=880;
+    g.gain.setValueAtTime(.18,ctx.currentTime);
+    o.start();o.stop(ctx.currentTime+.35);
+    setTimeout(()=>ctx.close(),500);
+  }catch(e){}
+}
+function toggleRestTimer(btn,key){
+  if(timerHandles[key]){clearInterval(timerHandles[key].id);timerHandles[key]=null;btn.textContent="⏱ راحة";btn.classList.remove("running","done");return}
+  let remaining=REST_SECONDS;
+  btn.classList.add("running");btn.classList.remove("done");
+  const tick=()=>{
+    const m=String(Math.floor(remaining/60)).padStart(2,"0"),s=String(remaining%60).padStart(2,"0");
+    btn.textContent=`⏱ ${m}:${s}`;
+    if(remaining<=0){
+      clearInterval(timerHandles[key].id);timerHandles[key]=null;
+      btn.textContent="✅ يلا!";btn.classList.remove("running");btn.classList.add("done");
+      beep();
+      setTimeout(()=>{if(btn.isConnected){btn.textContent="⏱ راحة";btn.classList.remove("done")}},2500);
+      return;
+    }
+    remaining--;
+  };
+  tick();
+  timerHandles[key]={id:setInterval(tick,1000)};
+}
+
+function saveCheck(el){
+  localStorage.setItem("check-"+el.dataset.d+"-"+el.dataset.e,el.checked);
+  updateDayProgress(parseInt(el.dataset.d));
+}
+function restoreChecks(i){document.querySelectorAll(".check").forEach(el=>el.checked=localStorage.getItem("check-"+el.dataset.d+"-"+el.dataset.e)==="true")}
+
+/* ===== per-day progress + streak + celebration ===== */
+function dayCheckedCount(i){
+  const d=getDays()[i]; if(!d.ex.length) return {done:0,total:0};
+  let done=0; d.ex.forEach((x,j)=>{if(localStorage.getItem("check-"+i+"-"+j)==="true")done++});
+  return {done,total:d.ex.length};
+}
+function getCompletionLog(){try{return JSON.parse(localStorage.getItem("completionLog")||"{}")}catch(e){return{}}}
+function setCompletionLog(log){localStorage.setItem("completionLog",JSON.stringify(log))}
+function updateDayProgress(i){
+  const {done,total}=dayCheckedCount(i);
+  const el=document.getElementById("dayProgress");
+  if(el && parseInt(el.dataset.day)===i){
+    const pct=total?Math.round(done/total*100):0;
+    el.querySelector(".barfill").style.width=pct+"%";
+    el.querySelector(".barlbl").textContent=`${done}/${total}`;
+    el.classList.toggle("done",total>0&&done===total);
+  }
+  // Log full completion against today's real calendar date (so streaks are honest).
+  const dayMap=[1,2,3,4,5,6,0];
+  const todayIdx=dayMap[new Date().getDay()];
+  if(i===todayIdx && total>0){
+    const todayStr=new Date().toISOString().slice(0,10);
+    const log=getCompletionLog();
+    const wasComplete=!!log[todayStr];
+    if(done===total){
+      log[todayStr]=true; setCompletionLog(log);
+      if(!wasComplete){
+        celebrateDay();
+        const active=getActiveSession();
+        if(active && active.dayIndex===i) finishWorkoutSession(i);
+      }
+    }
+    else if(wasComplete){ delete log[todayStr]; setCompletionLog(log); }
+  }
+  updateStreakUI();
+}
+function computeStreak(){
+  const log=getCompletionLog();
+  const dayMap=[1,2,3,4,5,6,0];
+  const d=getDays();
+  let streak=0;
+  for(let back=0;back<60;back++){
+    const dt=new Date(); dt.setDate(dt.getDate()-back);
+    const idx=dayMap[dt.getDay()]; const isRest=d[idx].ex.length===0;
+    const key=dt.toISOString().slice(0,10);
+    if(isRest || log[key]){streak++;} else {break;}
+  }
+  return streak;
+}
+function updateStreakUI(){const el=document.getElementById("streakStat");if(el)el.textContent=`🔥 ${computeStreak()}`}
+function celebrateDay(){
+  showToast("🔥 يوم مكتمل بالكامل! أحسنت 💪");
+  const colors=["#ff7a18","#39d98a","#f5f7fa","#ffcf5c"];
+  for(let k=0;k<28;k++){
+    const p=document.createElement("div");
+    p.className="confetti-piece";
+    const size=6+Math.random()*6;
+    p.style.left=Math.random()*100+"vw";
+    p.style.width=size+"px";p.style.height=size+"px";
+    p.style.background=colors[k%colors.length];
+    p.style.animationDuration=(1.6+Math.random()*1.2)+"s";
+    p.style.animationDelay=(Math.random()*.3)+"s";
+    document.body.appendChild(p);
+    setTimeout(()=>p.remove(),3200);
+  }
+}
+let toastTimer=null;
+function showToast(msg){
+  const t=document.getElementById("toast"); t.textContent=msg; t.classList.add("show");
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove("show"),3200);
+}
+
+/* ===== workout session timer: من "ابدأ التمرين" لحد "إنهاء وتسجيل" ===== */
+let sessionTickHandle=null;
+function getActiveSession(){try{return JSON.parse(localStorage.getItem("activeWorkoutSession")||"null")}catch(e){return null}}
+function setActiveSession(s){ if(s) localStorage.setItem("activeWorkoutSession",JSON.stringify(s)); else localStorage.removeItem("activeWorkoutSession"); }
+function getWorkoutLog(){try{return JSON.parse(localStorage.getItem("workoutLog")||"[]")}catch(e){return[]}}
+function setWorkoutLog(a){localStorage.setItem("workoutLog",JSON.stringify(a))}
+function fmtDuration(sec){
+ sec=Math.max(0,Math.round(sec));
+ const h=Math.floor(sec/3600),m=Math.floor((sec%3600)/60),s=sec%60;
+ return h>0?`${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`:`${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;
+}
+function startWorkoutSession(i){
+ setActiveSession({dayIndex:i,startedAt:Date.now()});
+ startSessionTick();
+ updateSessionUI();
+ showToast("⏱ بدأ توقيت التمرين، يلا! 💪");
+}
+function finishWorkoutSession(silentDayIndex){
+ const active=getActiveSession();
+ if(!active)return;
+ const dIdx=silentDayIndex??active.dayIndex;
+ const elapsedSec=(Date.now()-active.startedAt)/1000;
+ const d=getDays()[active.dayIndex];
+ const {done,total}=dayCheckedCount(active.dayIndex);
+ const log=getWorkoutLog();
+ log.unshift({
+   date:new Date().toISOString().slice(0,10),
+   time:new Date().toLocaleTimeString("ar-EG",{hour:"2-digit",minute:"2-digit"}),
+   dayName:d.n, title:d.title, durationSec:Math.round(elapsedSec), done, total,
+   split: genderKey()==="male" ? trainingSystemKey() : null
+ });
+ setWorkoutLog(log.slice(0,40));
+ setActiveSession(null);
+ clearInterval(sessionTickHandle); sessionTickHandle=null;
+ updateSessionUI();
+ renderWorkoutLog();
+ showToast(`🏁 تم تسجيل التمرين — المدة ${fmtDuration(elapsedSec)}`);
+}
+function toggleWorkoutSession(i){
+ const active=getActiveSession();
+ if(active && active.dayIndex===i){ finishWorkoutSession(i); }
+ else if(active){ /* فيه جلسة شغالة في يوم تاني - خلي المستخدم يقفلها الأول */ showToast("⏱ عندك جلسة شغالة في يوم تاني، أنهيها الأول"); }
+ else { startWorkoutSession(i); }
+}
+function startSessionTick(){
+ clearInterval(sessionTickHandle);
+ sessionTickHandle=setInterval(updateSessionUI,1000);
+}
+function updateSessionUI(){
+ const disp=document.getElementById("sessionTimerDisplay");
+ const btn=document.getElementById("sessionTimerBtn");
+ const note=document.getElementById("sessionOtherDayNote");
+ if(!disp||!btn)return;
+ const active=getActiveSession();
+ if(active && active.dayIndex===currentDayIndex){
+   disp.textContent=fmtDuration((Date.now()-active.startedAt)/1000);
+   btn.textContent="⏹ إنهاء وتسجيل"; btn.classList.add("danger");
+   if(note)note.innerHTML="";
+ } else if(active){
+   const activeDay=getDays()[active.dayIndex];
+   disp.textContent=fmtDuration((Date.now()-active.startedAt)/1000);
+   btn.textContent="▶️ ابدأ التمرين"; btn.classList.remove("danger");
+   if(note)note.innerHTML=`<p class="note">🔴 عندك جلسة شغالة في يوم "${activeDay?activeDay.n:''}" — <a href="#" onclick="event.preventDefault();finishWorkoutSession();">أنهيها من هنا</a> الأول.</p>`;
+ } else {
+   disp.textContent="00:00";
+   btn.textContent="▶️ ابدأ التمرين"; btn.classList.remove("danger");
+   if(note)note.innerHTML="";
+ }
+}
+function splitArabicLabel(key){ return key?trainingSystemLabel(key):""; }
+function renderWorkoutLog(){
+ const el=document.getElementById("workoutLogList"); const countEl=document.getElementById("workoutLogCount");
+ if(!el)return;
+ const log=getWorkoutLog();
+ if(countEl)countEl.textContent=`${log.length} جلسة`;
+ if(!log.length){ el.innerHTML=`<p class="note">لسه مفيش جلسات متسجلة. ابدأ/ي تمرينك واضغط "ابدأ التمرين".</p>`; return; }
+ el.innerHTML=log.map(s=>`<div class="exercise"><div class="ex-top"><div><b class="exercise-name-en">${s.dayName} — ${s.title}</b><span class="exercise-name-ar">${s.date} ${s.time||""} • ${s.done}/${s.total} تمارين${s.split?(" • "+splitArabicLabel(s.split)):""}</span></div><span class="sets">${fmtDuration(s.durationSec)}</span></div></div>`).join("");
+}
+function clearWorkoutLog(){ if(confirm("مسح كل سجل جلسات التمرين؟")){ setWorkoutLog([]); renderWorkoutLog(); } }
+
+function renderTabs(){const tabs=document.getElementById("tabs");tabs.innerHTML="";getDays().forEach((d,i)=>{const b=document.createElement("button");b.className="daychip";b.textContent=d.ex.length?d.n:`${d.n} 💤`;b.onclick=()=>renderDay(i);tabs.appendChild(b)})}
+
+function getMealReminders(){try{return JSON.parse(localStorage.getItem("mealReminders")||"{}")}catch(e){return{}}}
+function saveMealReminder(id,time,enabled){const a=getMealReminders();a[id]={time,enabled};localStorage.setItem("mealReminders",JSON.stringify(a));}
+function renderMeals(){
+ const saved=getMealReminders();
+ document.getElementById("mealList").innerHTML=meals.map(m=>{
+   const r=saved[m.id]||{time:m.time,enabled:false};
+   return `<div class="meal"><div class="meal-row"><div><div><span class="time-tag">${m.time}</span> — <b>${m.label}</b></div><div class="note">${m.text}</div></div><label class="reminder"><input type="checkbox" ${r.enabled?'checked':''} onchange="toggleMealReminder(${m.id},this.checked)"> 🔔</label></div><div class="actions"><input class="reminder-time" type="time" value="${r.time}" onchange="changeMealTime(${m.id},this.value)"><span class="note">وقت التذكير</span></div></div>`;
+ }).join("");
+ updateReminderStatus();
+ updateNutritionTargets();
+}
+function updateNutritionTargets(){
+ const el=document.getElementById("nutritionTargets"); if(!el)return;
+ const p=getProfile();
+ if(!p||!p.gender||!p.goal){ el.textContent="جهّز ملفك الشخصي الأول (النوع والهدف) عشان نحسبلك السعرات والبروتين والمياه المناسبين."; return; }
+ const r=computeRecommendation(p);
+ const goalNote=p.goal==="lose"
+   ? "🔻 عجز سعرات بسيط: قلّلي كمية الأرز/العيش شوية في الوجبة الرئيسية وحافظي على البروتين زي ما هو."
+   : p.goal==="gain"
+   ? "🔺 فائض سعرات بسيط: زودي معلقة زيت زيتون أو حفنة مكسرات على وجبة أو اتنين، وحافظي على البروتين."
+   : "⚖️ سعرات صيانة تقريبية مع بروتين كافي لتحسين تركيب الجسم تدريجيًا.";
+ el.innerHTML=`🔥 <b>${r.calories}</b> سعرة/يوم • 🥩 <b>${r.protein}</b> جم بروتين • 💧 <b>${r.waterLiters}</b> لتر مياه/يوم<br><span class="note">${goalNote}</span>`;
+}
+function callAndroidReminder(m,time,enabled){
+ if(typeof AndroidBridge!=="undefined"){
+   if(enabled) AndroidBridge.scheduleMealReminder(m.id,time,"🍽️ IRON ASCENT — "+m.label,m.text);
+   else AndroidBridge.cancelMealReminder(m.id);
+ }
+}
+function toggleMealReminder(id,enabled){
+ const m=meals.find(x=>x.id===id), saved=getMealReminders(), time=(saved[id]||{}).time||m.time;
+ saveMealReminder(id,time,enabled); callAndroidReminder(m,time,enabled); updateReminderStatus();
+}
+function changeMealTime(id,time){
+ const m=meals.find(x=>x.id===id), saved=getMealReminders(), enabled=(saved[id]||{}).enabled||false;
+ saveMealReminder(id,time,enabled); if(enabled) callAndroidReminder(m,time,true); updateReminderStatus();
+}
+function enableAllMealReminders(){
+ meals.forEach(m=>{const saved=getMealReminders();const time=(saved[m.id]||{}).time||m.time;saveMealReminder(m.id,time,true);callAndroidReminder(m,time,true)});renderMeals();
+}
+function disableAllMealReminders(){meals.forEach(m=>{saveMealReminder(m.id,(getMealReminders()[m.id]||{}).time||m.time,false);callAndroidReminder(m,(getMealReminders()[m.id]||{}).time||m.time,false)});renderMeals();}
+function updateReminderStatus(){const a=getMealReminders();const n=meals.filter(m=>a[m.id]?.enabled).length;document.getElementById("mealReminderStatus").textContent=n?`🔔 التذكيرات مفعّلة لـ ${n} وجبة يوميًا.`:"التذكيرات متوقفة. فعّل الوجبات التي تريد أن تذكّرك بها."}
+
+/* ===== bottom nav screens ===== */
+function showScreen(name){
+ document.querySelectorAll(".screen").forEach(s=>s.classList.toggle("active",s.id==="screen-"+name));
+ document.querySelectorAll(".navbtn").forEach(b=>b.classList.toggle("active",b.dataset.screen===name));
+}
+
+/* ===== live clock / date ===== */
+function updateClock(){
+ const now=new Date();
+ const timeStr=now.toLocaleTimeString("ar-EG",{hour:"2-digit",minute:"2-digit",hour12:true});
+ const dateStr=now.toLocaleDateString("ar-EG",{weekday:"long",day:"numeric",month:"long"});
+ document.getElementById("clockTime").textContent=timeStr;
+ document.getElementById("clockDate").textContent=dateStr;
+}
+
+/* ===== profile / local data ===== */
+function getProfile(){try{return JSON.parse(localStorage.getItem("ironProfile")||"null")}catch(e){return null}}
+
+/* ===== محرك التوصيات: سعرات + بروتين + مياه بناء على النوع/الوزن/الطول/العمر/الهدف ===== */
+function computeRecommendation(p){
+ const w=p.currentWeight, h=p.height, age=p.age, male=p.gender==="male";
+ const bmr = male ? (10*w + 6.25*h - 5*age + 5) : (10*w + 6.25*h - 5*age - 161);
+ const activityFactor = male ? 1.55 : 1.45; // البرنامج الرجالي 5 أيام / البرنامج النسائي 3 أيام
+ const tdee = bmr * activityFactor;
+ let calories, proteinPerKg;
+ if(p.goal==="lose"){ calories = tdee - 450; proteinPerKg = 2.2; }
+ else if(p.goal==="gain"){ calories = tdee + 350; proteinPerKg = 1.9; }
+ else { calories = tdee - 150; proteinPerKg = 1.8; }
+ const protein = Math.round(w*proteinPerKg);
+ const waterLiters = Math.round((w*0.035 + 0.5)*10)/10;
+ const bmi = w/((h/100)**2);
+ let bmiLabel = bmi<18.5?"أقل من الطبيعي":bmi<25?"وزن طبيعي":bmi<30?"زيادة وزن":"سمنة";
+ return {calories:Math.round(calories/10)*10, protein, waterLiters, bmi:Math.round(bmi*10)/10, bmiLabel, tdee:Math.round(tdee)};
+}
+
+function onGenderChange(){
+ const isMale=document.getElementById("pgender").value==="male";
+ document.getElementById("trainingSystemRow").style.display=isMale?"":"none";
+}
+function saveProfile(showMessage=false){
+ const name=document.getElementById("pname").value.trim();
+ const gender=document.getElementById("pgender").value;
+ const goal=document.getElementById("pgoal").value;
+ const trainingSystem=document.getElementById("ptrainingSystem").value||"iron";
+ const age=parseInt(document.getElementById("page").value), height=parseFloat(document.getElementById("pheight").value), weight=parseFloat(document.getElementById("pweight").value);
+ if(!name||!gender||!goal||!age||!height||!weight){alert("من فضلك أكمل كل الحقول: الاسم، النوع، الهدف، العمر، الطول، والوزن.");return false}
+ const old=getProfile(); const profile=old||{};
+ profile.name=name; profile.gender=gender; profile.goal=goal; profile.age=age; profile.height=height;
+ if(gender==="male") profile.trainingSystem=trainingSystem; else delete profile.trainingSystem;
+ profile.startingWeight=profile.startingWeight||weight; profile.currentWeight=weight;
+ profile.highestWeight=Math.max(profile.highestWeight||weight,weight);
+ profile.lowestWeight=Math.min(profile.lowestWeight??weight,weight);
+ localStorage.setItem("ironProfile",JSON.stringify(profile));
+ updateProfileUI(); renderWeights(); renderTabs();
+ const d=getDays(); const dayMap=[1,2,3,4,5,6,0]; renderDay(dayMap[new Date().getDay()]);
+ updateNutritionTargets(); renderAIChips();
+ if(showMessage) alert("تم حفظ بياناتك ✅"); return true;
+}
+
+function updateProfileUI(){
+ const p=getProfile(); if(!p)return;
+ document.getElementById("pname").value=p.name||"";
+ document.getElementById("pgender").value=p.gender||"";
+ document.getElementById("pgoal").value=p.goal||"";
+ document.getElementById("ptrainingSystem").value=p.trainingSystem||"iron";
+ document.getElementById("page").value=p.age||""; document.getElementById("pheight").value=p.height||""; document.getElementById("pweight").value=p.currentWeight||"";
+ const isMale=p.gender==="male";
+ document.getElementById("trainingSystemRow").style.display=isMale?"":"none";
+ const readyWord=isMale?"جاهز":"جاهزة";
+ document.getElementById("welcomeLine").textContent=`أهلاً يا ${p.name} 👋`;
+ document.getElementById("profileSummary").textContent=`${readyWord} يا ${p.name} لتمرينك؟ 🔥 • ${p.age} سنة • ${p.height} سم`;
+ document.getElementById("startWeightStat").textContent=`${Number(p.startingWeight).toFixed(1)} KG`;
+ document.getElementById("currentWeightStat").textContent=`${Number(p.currentWeight).toFixed(1)} KG`;
+
+ if(p.gender&&p.goal){
+   const r=computeRecommendation(p);
+   const splitLabel=isMale?trainingSystemLabel(trainingSystemKey()):"برنامج 3 أيام";
+   document.getElementById("planSplitPill").textContent=splitLabel;
+   document.getElementById("planIntro").textContent=`بناءً على بياناتك: ${splitLabel} مناسب لهدفك (${goalArabic(p.goal)}). مؤشر كتلة الجسم (BMI) عندك ${r.bmi} — ${r.bmiLabel}.`;
+   document.getElementById("planStats").innerHTML=`
+     <div class="stat"><b>${r.calories}</b><span>سعرة/اليوم</span></div>
+     <div class="stat"><b>${r.protein} جم</b><span>بروتين/اليوم</span></div>
+     <div class="stat"><b>${r.waterLiters} ل</b><span>مياه/اليوم</span></div>`;
+ }
+
+ const goal=p.goal||"tone";
+ let badges, badgeExplain;
+ if(goal==="lose"){
+   badges=Math.max(0,Math.floor((p.startingWeight-(p.lowestWeight??p.startingWeight))/4));
+   badgeExplain="كل نزول 4 كجم عن وزن البداية يمنحك Badge جديد. يتم احتساب أقل وزن وصلتِ له.";
+ } else {
+   badges=Math.max(0,Math.floor((p.highestWeight-p.startingWeight)/4));
+   badgeExplain="كل زيادة 4 كجم فوق وزن البداية تمنحك Badge جديد. يتم احتساب أعلى وزن وصلت إليه.";
+ }
+ document.getElementById("badgeStat").textContent=`🏆 ${badges}`; document.getElementById("badgeCount").textContent=`${badges} Badges`;
+ document.getElementById("badgeExplain").textContent=badgeExplain;
+ renderBadges(badges,p.startingWeight,goal);
+ updateNutritionTargets();
+}
+function goalArabic(g){return g==="lose"?"خسارة وزن":g==="gain"?"زيادة وزن":"تناسق عام"}
+
+function renderBadges(count,start,goal){const el=document.getElementById("badgeGrid");el.innerHTML="";const dir=goal==="lose"?-1:1;for(let i=1;i<=6;i++){const need=start+dir*i*4;const unlocked=i<=count;el.innerHTML+=`<div class="badge ${unlocked?'':'locked'}"><span class="medal">${unlocked?'🏆':'🔒'}</span><b>Badge ${i}</b><small>${need.toFixed(1)} KG</small></div>`}}
+function getWeights(){try{return JSON.parse(localStorage.getItem("weights")||"[]")}catch(e){return[]}}
+function addWeight(){
+ const date=document.getElementById("wdate").value||new Date().toISOString().slice(0,10), value=parseFloat(document.getElementById("wvalue").value), note=document.getElementById("wnote").value.trim(); if(!value){alert("اكتبي/اكتب الوزن أولًا");return}
+ const a=getWeights();a.push({date,value,note});a.sort((x,y)=>x.date.localeCompare(y.date));localStorage.setItem("weights",JSON.stringify(a));
+ const p=getProfile()||{};p.currentWeight=value;p.highestWeight=Math.max(p.highestWeight||value,value);p.lowestWeight=Math.min(p.lowestWeight??value,value);if(!p.startingWeight)p.startingWeight=value;localStorage.setItem("ironProfile",JSON.stringify(p));
+ document.getElementById("wvalue").value="";document.getElementById("wnote").value="";updateProfileUI();renderWeights();
+}
+function deleteWeight(i){const a=getWeights();a.splice(i,1);localStorage.setItem("weights",JSON.stringify(a));renderWeights()}
+function clearWeights(){if(confirm("مسح كل سجل الوزن؟")){localStorage.removeItem("weights");renderWeights()}}
+function renderWeights(){
+ const a=getWeights(),tb=document.getElementById("weights"),p=getProfile();tb.innerHTML="";
+ a.forEach((w,i)=>{const tr=document.createElement("tr");const diff=p?(w.value-p.startingWeight):0;tr.innerHTML=`<td>${w.date}</td><td><b>${w.value.toFixed(1)} كجم</b></td><td>${(diff>=0?"+":"")+diff.toFixed(1)}</td><td>${w.note||"—"}</td><td><button class="btn danger" style="padding:6px 9px" onclick="deleteWeight(${i})">حذف</button></td>`;tb.appendChild(tr)});
+ if(a.length&&p&&p.goal){
+   const latest=a[a.length-1].value, goal=p.goal;
+   const pct=goal==="lose"?Math.max(0,Math.min(100,(p.startingWeight-latest)/10*100)):Math.max(0,Math.min(100,(latest-p.startingWeight)/10*100));
+   document.getElementById("bar").style.width=pct+"%";
+   const badgeVal=goal==="lose"?Math.floor((p.startingWeight-(p.lowestWeight??p.startingWeight))/4):Math.floor((p.highestWeight-p.startingWeight)/4);
+   const extremeLabel=goal==="lose"?"أقل وزن":"أعلى وزن";
+   const extremeVal=goal==="lose"?(p.lowestWeight??latest):p.highestWeight;
+   document.getElementById("progressText").innerHTML=`آخر وزن: <b>${latest.toFixed(1)} كجم</b> — ${extremeLabel}: <b>${extremeVal.toFixed(1)} كجم</b> — البادجات: <b>${badgeVal}</b>`;
+ }else{document.getElementById("bar").style.width="0";document.getElementById("progressText").textContent="لسه مفيش وزن مسجل. اكتب/اكتبي وزنك هنا كل أسبوع."}
+}
+
+/* ===== IRON AI: مساعد Offline قائم على قواعد وبيانات المستخدم ===== */
+const AI_CHIPS=[
+ {label:"🍽️ أكل بعد التمرين",q:"ما أفضل أكل بعد التمرين؟"},
+ {label:"💧 احتياجي من المياه",q:"محتاجة أشرب كام مياه في اليوم؟"},
+ {label:"🥩 احتياجي من البروتين",q:"البروتين المطلوب لي كام في اليوم؟"},
+ {label:"📅 تمرين النهاردة",q:"عندي تمرين إيه النهاردة؟"},
+ {label:"😴 تعبانة/متحمسة مش قد كده",q:"أنا تعبان/ة النهاردة أعمل إيه؟"},
+ {label:"🔄 بدائل تمرين",q:"أقدر أبدل تمرين الـ Hip Thrust بإيه؟"},
+ {label:"📉 الوزن واقف",q:"وزني واقف من أسبوعين، أعمل إيه؟"},
+ {label:"🎯 خطتي الحالية",q:"خطتي الحالية إيه بالظبط؟"}
+];
+function renderAIChips(){
+ const el=document.getElementById("aiChips"); if(!el)return;
+ el.innerHTML="";
+ AI_CHIPS.forEach(c=>{
+   const b=document.createElement("button"); b.className="daychip"; b.textContent=c.label;
+   b.onclick=()=>{document.getElementById("aiQuestion").value=c.q; askAI();};
+   el.appendChild(b);
+ });
+}
+
+const SUBSTITUTES={
+ "hip thrust":["Barbell Glute Bridge","Cable Pull-Through","Smith Machine Hip Thrust"],
+ "leg press":["Hack Squat","Bulgarian Split Squat","Goblet Squat"],
+ "squat":["Leg Press","Hack Squat","Bulgarian Split Squat"],
+ "romanian deadlift":["Leg Curl","Cable Pull-Through","Good Morning"],
+ "lat pulldown":["Assisted Pull-Up","Seated Cable Row","Straight-Arm Pulldown"],
+ "chest press":["Push-Up","Dumbbell Bench Press","Machine Chest Press"]
+};
+
+function askAI(){
+ const q=document.getElementById("aiQuestion").value.trim();
+ if(!q){alert("اكتبي/اكتب سؤالك أولًا");return}
+ const answer=document.getElementById("aiAnswer");
+ const p=getProfile();
+ if(!p||!p.gender||!p.goal){ answer.textContent="جهّز/جهزي ملفك الشخصي الأول (النوع، الهدف، الطول، الوزن، العمر) عشان IRON AI يقدر يجاوبك بدقة."; return; }
+ const r=computeRecommendation(p);
+ const qLower=q.toLowerCase();
+ const dayMap=[1,2,3,4,5,6,0];
+ const todayIdx=dayMap[new Date().getDay()];
+ const today=getDays()[todayIdx];
+ let out="";
+
+ if(qLower.includes("بعد التمرين")||qLower.includes("بعد الجيم")){
+   out=`🍽️ بعد التمرين خلال 30–60 دقيقة: مصدر بروتين سريع (سكوب بروتين أو 3 بيضات) + كارب سريع الامتصاص (موزة/تمر/شوفان). ده هيساعد استرجاع العضل ويقربك من هدف الـ ${r.protein} جم بروتين اليومي.`;
+ } else if(qLower.includes("مياه")||qLower.includes("مياة")||qLower.includes("اشرب")){
+   out=`💧 احتياجك التقريبي ${r.waterLiters} لتر مياه يوميًا (بيزيد شوية في أيام التمرين). قسّميه على طول اليوم بدل ما تشربيه دفعة واحدة، وزوّدي كوب أو اتنين وقت الحر أو لو حاسّة بالعطش.`;
+ } else if(qLower.includes("بروتين")){
+   out=`🥩 هدفك التقريبي ${r.protein} جم بروتين يوميًا بناءً على وزنك الحالي (${p.currentWeight} كجم) وهدفك (${goalArabic(p.goal)}). حاولي توزعيه على 3–4 وجبات بدل ما يتركز في وجبة واحدة.`;
+ } else if(qLower.includes("تمرين النهارده")||qLower.includes("تمرين النهاردة")||qLower.includes("النهاردة")&&qLower.includes("تمرين")){
+   out= today.ex.length ? `📅 النهاردة (${today.n}): ${today.title}\n${today.ex.map((x,i)=>`${i+1}. ${x[0]} — ${x[2]}`).join("\n")}` : `📅 النهاردة (${today.n}) يوم راحة 😴 — مشي خفيف أو Stretching اختياري، وركزي على النوم والأكل.`;
+ } else if(qLower.includes("تعبان")||qLower.includes("تعبانة")||qLower.includes("مش قد كده")||qLower.includes("مرهق")){
+   out=`😌 لو تعبان/ة بجد: نفّذي نفس التمرين بأوزان أقل شوية (Deload) أو قلّلي عدد الـ Sets للنص، أهم حاجة تحافظي على الفورم. لو التعب مستمر كذا يوم، يوم راحة زيادة مش هيأثر على تقدمك، والاستمرارية أهم من تمرين واحد قوي.`;
+ } else if(qLower.includes("بدل")||qLower.includes("بديل")||qLower.includes("substitute")){
+   let found=null;
+   for(const key in SUBSTITUTES){ if(qLower.includes(key)){ found=key; break; } }
+   if(found){ out=`🔄 بدائل ممكنة لـ ${found}: ${SUBSTITUTES[found].join("، ")}. اختاري البديل اللي مفيش عندك زحمة عليه في الجيم أو اللي حاسة إنه مريح أكتر لمفاصلك.`; }
+   else{ out=`🔄 قوليلي اسم التمرين اللي عايزة تبدليه بالظبط (مثلاً: "أقدر أبدل الـ Leg Press بإيه؟") وهقترحلك بدائل مناسبة لنفس العضلة.`; }
+ } else if(qLower.includes("واقف")||qLower.includes("مش بينزل")||qLower.includes("مش بيزيد")||qLower.includes("plateau")){
+   out= p.goal==="lose"
+     ? `📉 لو الوزن واقف مع إنك ملتزمة بالسعرات: راجعي إنك مش بتقيسي الأكل "بالعين"، زودي المشي اليومي شوية، أو قلّلي 100–150 سعرة إضافية لمدة أسبوعين. الوزن بيتقلب بسبب المياه والملح، فراقبي المعدل الأسبوعي مش اليومي.`
+     : `📈 لو الوزن واقف وهدفك زيادة: زودي 150–200 سعرة إضافية (أكل أو مشروب سعرات زي اللبن والمكسرات)، وتأكدي إنك بتزودي في الأوزان تدريجيًا (Progressive Overload) في التمرين.`;
+ } else if(qLower.includes("خطتي")||qLower.includes("البرنامج بتاعي")){
+   out=`🎯 خطتك الحالية:\n• النوع: ${p.gender==="male"?"ذكر":"أنثى"} — البرنامج: ${p.gender==="male"?trainingSystemLabel(trainingSystemKey()):"3 أيام"}\n• الهدف: ${goalArabic(p.goal)}\n• السعرات المقترحة: ${r.calories} سعرة/اليوم\n• البروتين: ${r.protein} جم/اليوم\n• المياه: ${r.waterLiters} لتر/اليوم\n• BMI: ${r.bmi} (${r.bmiLabel})`;
+ } else {
+   out=`🤖 دي معلومة عامة بناءً على بياناتك: سعراتك المقترحة ${r.calories}/اليوم، بروتين ${r.protein} جم، مياه ${r.waterLiters} لتر. لإجابة أدق جربي أسئلة زي: "أكل بعد التمرين"، "تمرين النهاردة"، "بدائل تمرين معين"، أو "الوزن واقف".\n\n⚠️ ده مساعد داخلي مش بديل عن دكتور أو مدرب مختص في الحالات الطبية أو الإصابات.`;
+ }
+ answer.textContent=out;
+}
+
+document.getElementById("wdate").value=new Date().toISOString().slice(0,10);
+renderTabs();renderMeals();updateClock();setInterval(updateClock,30000);renderAIChips();
+if(!getProfile()){showScreen("profile");}else{updateProfileUI();renderWeights();showScreen("workout");}
+const dayMap=[1,2,3,4,5,6,0];renderDay(dayMap[new Date().getDay()]);
+updateStreakUI();
+renderWorkoutLog();
+</script>
+</body>
+</html>

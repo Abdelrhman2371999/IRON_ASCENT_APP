@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 500">
+<defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#1b2633"/><stop offset="1" stop-color="#10151c"/></linearGradient><filter id="glow"><feGaussianBlur stdDeviation="5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+<rect width="900" height="500" rx="28" fill="url(#bg)"/><rect x="18" y="18" width="864" height="464" rx="22" fill="none" stroke="#293544" stroke-width="2"/>
+<circle cx="450" cy="230" r="120" fill="#121821" stroke="#3a4655" stroke-width="2"/>
+<circle cx="798" cy="70" r="26" fill="#ff5c9e" opacity="0.18"/><text x="798" y="80" text-anchor="middle" fill="#ff5c9e" font-family="Arial, sans-serif" font-size="26" font-weight="900">♀</text>
+
+<circle cx="450" cy="118" r="28" fill="#f5f7fa"/>
+<path d="M472 100 q26 6 14 34 q-4 18 -20 10" fill="#2a3543"/>
+<path d="M450 146 L450 210 Q432 240 450 268 Q468 296 450 320 L450 360 M450 175 L392 210 M450 175 L508 210 M450 320 L400 360 M450 320 L500 360" fill="none" stroke="#f5f7fa" stroke-width="18" stroke-linecap="round"/>
+<path d="M340 225h60M500 225h60" stroke="#ff5c9e" stroke-width="12" stroke-linecap="round" filter="url(#glow)"/>
+<path d="M322 208v34M608 208v34" stroke="#ff5c9e" stroke-width="9" stroke-linecap="round"/>
+
+<text x="450" y="420" text-anchor="middle" fill="#ff5c9e" font-family="Arial, sans-serif" font-size="23" font-weight="700" letter-spacing="2">ROMANIAN DEADLIFT</text>
+<text x="450" y="458" text-anchor="middle" fill="#f5f7fa" font-family="Arial, sans-serif" font-size="20">ديدليفت روماني</text>
+</svg>

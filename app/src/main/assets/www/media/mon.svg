@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 500">
+<defs><linearGradient id="g" x1="0" x2="1"><stop offset="0" stop-color="#121821"/><stop offset="1" stop-color="#252f3c"/></linearGradient></defs>
+<rect width="1200" height="500" rx="42" fill="url(#g)"/>
+<circle cx="100" cy="90" r="4" fill="#ff7a18"/><circle cx="1080" cy="120" r="5" fill="#ff7a18"/><circle cx="1020" cy="390" r="3" fill="#ff7a18"/>
+<text x="600" y="180" fill="#ff7a18" font-family="Arial,sans-serif" font-size="74" font-weight="800" text-anchor="middle">🦵</text>
+<text x="600" y="290" fill="#f5f7fa" font-family="Arial,sans-serif" font-size="54" font-weight="800" text-anchor="middle">MONDAY</text>
+<text x="600" y="360" fill="#9eabb9" font-family="Arial,sans-serif" font-size="30" font-weight="600" text-anchor="middle">LEGS • SHOULDERS • ABS</text>
+<text x="600" y="425" fill="#ff7a18" font-family="Arial,sans-serif" font-size="24" font-weight="700" text-anchor="middle">IRON ASCENT</text>
+</svg>

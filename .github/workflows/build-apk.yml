@@ -1,0 +1,199 @@
+name: Build IRON ASCENT APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: read
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK 35
+        run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          gradle-version: '8.11.1'
+
+      - name: Download bundled real exercise photos
+        shell: bash
+        run: |
+          set -euo pipefail
+          DIR=app/src/main/assets/www/photos
+          mkdir -p "$DIR"
+
+          # Fetches one Commons file via the stable Special:FilePath redirect
+          # into $2, and verifies the result is actually an image (not an
+          # HTML error/404 page). Returns non-zero on any failure.
+          try_fetch() {
+            local file="$1" tmp="$2"
+            if curl -L --fail --retry 3 --retry-delay 2 -sS \
+                 "https://commons.wikimedia.org/wiki/Special:FilePath/${file}" \
+                 -o "$tmp" 2>/dev/null; then
+              if file --mime-type -b "$tmp" | grep -q '^image/'; then return 0; fi
+            fi
+            rm -f "$tmp"
+            return 1
+          }
+
+          # download OUT_FILENAME CANDIDATE_FILE [CANDIDATE_FILE...]
+          # Tries each literal Commons filename in order. Fails the build
+          # loudly instead of silently shipping a broken/empty image.
+          download() {
+            local out="$1"; shift
+            local tmp="$DIR/.tmp-$out"
+            local ok=0
+            for file in "$@"; do
+              if try_fetch "$file" "$tmp"; then ok=1; break; fi
+            done
+            if [ "$ok" -ne 1 ]; then
+              echo "::error::Failed to download a valid image for $out (tried: $*)"
+              exit 1
+            fi
+            mv "$tmp" "$DIR/$out"
+          }
+
+          # download_resilient OUT_FILENAME COMMONS_CATEGORY CANDIDATE_FILE [CANDIDATE_FILE...]
+          # Same as download(), but if every literal filename 404s (e.g. a
+          # file got renamed/deleted on Commons), it asks the Commons API for
+          # the actual current file list of COMMONS_CATEGORY and tries those
+          # real, live filenames instead of just failing outright. This is
+          # what would have auto-recovered from the row.jpg 404 above.
+          download_resilient() {
+            local out="$1" category="$2"; shift 2
+            local tmp="$DIR/.tmp-$out"
+            local ok=0
+            for file in "$@"; do
+              if try_fetch "$file" "$tmp"; then ok=1; break; fi
+            done
+            if [ "$ok" -ne 1 ] && [ -n "$category" ]; then
+              echo "⚠️  Named sources for $out failed — asking Commons API for live files in Category:$category ..."
+              local titles
+              titles=$(curl -sS --fail \
+                "https://commons.wikimedia.org/w/api.php?action=query&list=categorymembers&cmtitle=Category:${category// /%20}&cmtype=file&cmlimit=10&format=json" \
+                2>/dev/null \
+                | grep -o '"title":"File:[^"]*\.\(jpg\|jpeg\|png\|webp\|JPG\|JPEG\|PNG\)"' \
+                | sed -E 's/"title":"File:(.*)"$/\1/') || titles=""
+              while IFS= read -r t; do
+                [ -z "$t" ] && continue
+                local fname="${t// /_}"
+                echo "   trying $fname"
+                if try_fetch "$fname" "$tmp"; then ok=1; break; fi
+              done <<< "$titles"
+            fi
+            if [ "$ok" -ne 1 ]; then
+              echo "::error::Failed to download a valid image for $out (tried: $* / Category:$category)"
+              exit 1
+            fi
+            mv "$tmp" "$DIR/$out"
+          }
+
+          # Chest / Back / Shoulders
+          download bench.webp "Bench_press.webp" "Bench_press.jpg"
+          download chest_fly.jpg "Chest_Fly_Machine_1.jpg"
+          download pulldown.jpg "Diverging_Lat_Pulldown_Machine.jpg"
+          download_resilient row.jpg "Bent-over row" "Barbell_row.jpg" "CableMachineUprightRow.JPG" "Cable-seated-rows-1.png"
+          download shoulder.jpg "DumbbellLateralRaise.JPG" "Lateral_raise.jpg"
+
+          # Arms
+          download biceps.png "Biceps-curl-1.png" "Dumbbell_curl.jpg"
+          download triceps.jpg "KPulley2_Triceps_Extension2.jpg"
+          download wrist.png "Exercise_Wrist_Curls.png"
+
+          # Legs
+          download leg_extension.jpg "LegExtensionMachineExercise.JPG"
+          download leg_press.jpg "Leg_Press.jpg"
+          download calf.jpg "Seated_calf_machine.jpg"
+          download_resilient hack_squat.jpg "Squats (exercise)" "David_Jobson_%26_Ziggy_Chima%3B_machine_hack_squat.jpg" "Hack_squat.jpg"
+          download legcurl.jpg "LyingLegCurlMachineExercise.JPG"
+          download_resilient adductor.jpg "Weight training equipment" "Hip_abductor_machine.jpg"
+          # No dedicated hip-thrust machine photo exists on Commons; a barbell
+          # glute-bridge (the same hip-extension movement pattern) is the
+          # closest real exercise photo available and is used honestly as
+          # a labelled substitute rather than a mismatched machine photo.
+          download_resilient hipthrust.jpg "Bridge (exercise)" "Bridge_(exercise)_-_USDAgov.jpg" "Single_Leg_Bridge.jpg" "Bridge_position.jpeg"
+
+          # Abs
+          download abs.jpg "USMC-111018-M-KV513-004.jpg"
+
+          echo "Downloaded photos:"
+          ls -la "$DIR"
+
+      - name: Map real photos into gendered fallback folders
+        shell: bash
+        run: |
+          set -euo pipefail
+          DIR=app/src/main/assets/www/photos
+          mkdir -p "$DIR/male" "$DIR/female"
+
+          # The app looks for photos/<gender>/<key>.jpg first, then falls
+          # back to the bundled illustration in images/<gender>/<key>.svg.
+          # The Commons photos downloaded above are generic gym-equipment /
+          # movement-pattern shots (no visible identifiable person tied to
+          # one gender), so the same verified real photo is copied into
+          # both photos/male/<key>.jpg and photos/female/<key>.jpg.
+          map() {
+            local key="$1" src="$DIR/$2"
+            [ -f "$src" ] || { echo "::warning::missing $src, skipping $key"; return; }
+            cp "$src" "$DIR/male/$key.jpg"
+            cp "$src" "$DIR/female/$key.jpg"
+          }
+
+          map bench          bench.webp
+          map chestfly        chest_fly.jpg
+          map pulldown        pulldown.jpg
+          map row             row.jpg
+          map shoulder        shoulder.jpg
+          map biceps          biceps.png
+          map triceps         triceps.jpg
+          map wrist           wrist.png
+          map legextension    leg_extension.jpg
+          map legpress        leg_press.jpg
+          map calf            calf.jpg
+          map hack            hack_squat.jpg
+          map legcurl         legcurl.jpg
+          map adductor        adductor.jpg
+          map hipthrust       hipthrust.jpg
+          map abs             abs.jpg
+          # Keys with no dedicated Commons source yet reuse the closest
+          # real photo of the same muscle group / movement pattern.
+          map hipabduction    adductor.jpg
+          map splitsquat      hack_squat.jpg
+          map rdl             legcurl.jpg
+          map shoulderpress   shoulder.jpg
+
+          echo "Gendered photo folders:"
+          ls -la "$DIR/male" "$DIR/female"
+
+      - name: Build debug APK
+        run: gradle --no-daemon --stacktrace :app:assembleDebug
+
+      - name: Rename APK
+        run: cp app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/IRON-ASCENT-2.2.0.apk
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: IRON-ASCENT-2.2.0-APK
+          path: app/build/outputs/apk/debug/IRON-ASCENT-2.2.0.apk
+          if-no-files-found: error
+          retention-days: 30
